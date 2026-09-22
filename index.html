@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Stamp Card</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #fff5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      border-radius: 20px;
+      padding: 30px 24px;
+      box-shadow: 0 10px 30px rgba(80, 0, 20, 0.12);
+    }
+
+    .logo {
+      text-align: center;
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      color: #800000;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #777;
+      margin-bottom: 25px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tabs button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: #f0e0e0;
+      color: #800000;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .tabs button.active {
+      background: #800000;
+      color: white;
+    }
+
+    .form {
+      display: none;
+    }
+
+    .form.active {
+      display: block;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      margin-bottom: 14px;
+      border: 1px solid #d8b8b8;
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #800000;
+      box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.08);
+    }
+
+    .main-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: #800000;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .main-btn:hover {
+      background: #660000;
+    }
+
+    #message {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+      color: #800000;
+      min-height: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="logo">⭐</div>
+
+    <h1>Digital Stamp Card</h1>
+
+    <p class="subtitle">
+      Collect stamps and earn rewards
+    </p>
+
+    <div class="tabs">
+
+      <button id="loginTab"
+              class="active"
+              onclick="showLogin()">
+        Login
+      </button>
+
+      <button id="registerTab"
+              onclick="showRegister()">
+        Register
+      </button>
+
+    </div>
+
+    <!-- LOGIN -->
+
+    <div id="loginForm" class="form active">
+
+      <input
+        type="email"
+        id="loginEmail"
+        placeholder="Email address"
+      >
+
+      <input
+        type="password"
+        id="loginPassword"
+        placeholder="Password"
+      >
+
+      <button class="main-btn"
+              onclick="loginCustomer()">
+        Login
+      </button>
+
+    </div>
+
+
+    <!-- REGISTER -->
+
+    <div id="registerForm" class="form">
+
+      <input
+        type="text"
+        id="registerName"
+        placeholder="Full name"
+      >
+
+      <input
+        type="tel"
+        id="registerPhone"
+        placeholder="Phone number"
+      >
+
+      <input
+        type="email"
+        id="registerEmail"
+        placeholder="Email address"
+      >
+
+      <input
+        type="password"
+        id="registerPassword"
+        placeholder="Create password"
+      >
+
+      <button class="main-btn"
+              onclick="registerCustomer()">
+        Create Account
+      </button>
+
+    </div>
+
+
+    <div id="message"></div>
+
+  </div>
+
+
+  <script type="module">
+
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword
+    }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    import {
+      getFirestore,
+      doc,
+      setDoc
+    }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+    const firebaseConfig = {
+
+      apiKey: "YOUR_API_KEY",
+
+      authDomain: "YOUR_AUTH_DOMAIN",
+
+      projectId: "YOUR_PROJECT_ID",
+
+      storageBucket: "YOUR_STORAGE_BUCKET",
+
+      messagingSenderId:
+        "YOUR_MESSAGING_SENDER_ID",
+
+      appId: "YOUR_APP_ID"
+
+    };
+
+
+    const app =
+      initializeApp(firebaseConfig);
+
+    const auth =
+      getAuth(app);
+
+    const db =
+      getFirestore(app);
+
+
+    window.showLogin = function () {
+
+      document
+        .getElementById("loginForm")
+        .classList.add("active");
+
+      document
+        .getElementById("registerForm")
+        .classList.remove("active");
+
+      document
+        .getElementById("loginTab")
+        .classList.add("active");
+
+      document
+        .getElementById("registerTab")
+        .classList.remove("active");
+
+    };
+
+
+    window.showRegister = function () {
+
+      document
+        .getElementById("registerForm")
+        .classList.add("active");
+
+      document
+        .getElementById("loginForm")
+        .classList.remove("active");
+
+      document
+        .getElementById("registerTab")
+        .classList.add("active");
+
+      document
+        .getElementById("loginTab")
+        .classList.remove("active");
+
+    };
+
+
+    window.registerCustomer = async function () {
+
+      const name =
+        document
+          .getElementById("registerName")
+          .value.trim();
+
+      const phone =
+        document
+          .getElementById("registerPhone")
+          .value.trim();
+
+      const email =
+        document
+          .getElementById("registerEmail")
+          .value.trim();
+
+      const password =
+        document
+          .getElementById("registerPassword")
+          .value;
+
+      const message =
+        document.getElementById("message");
+
+
+      if (!name || !phone || !email || !password) {
+
+        message.textContent =
+          "Please fill all fields.";
+
+        return;
+      }
+
+
+      try {
+
+        const userCredential =
+          await createUserWithEmailAndPassword(
+            auth,
+            email,
+            password
+          );
+
+
+        const user =
+          userCredential.user;
+
+
+        await setDoc(
+          doc(db, "customers", user.uid),
+          {
+
+            name: name,
+
+            phone: phone,
+
+            email: email,
+
+            stamps: 0,
+
+            rewardUnlocked: false,
+
+            createdAt: new Date()
+
+          }
+        );
+
+
+        message.textContent =
+          "Account created successfully!";
+
+
+      } catch (error) {
+
+        message.textContent =
+          error.message;
+
+      }
+
+    };
+
+
+    window.loginCustomer = async function () {
+
+      const email =
+        document
+          .getElementById("loginEmail")
+          .value.trim();
+
+      const password =
+        document
+          .getElementById("loginPassword")
+          .value;
+
+      const message =
+        document.getElementById("message");
+
+
+      if (!email || !password) {
+
+        message.textContent =
+          "Please enter email and password.";
+
+        return;
+      }
+
+
+      try {
+
+        await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+
+        message.textContent =
+          "Login successful!";
+
+
+      } catch (error) {
+
+        message.textContent =
+          error.message;
+
+      }
+
+    };
+
+  </script>
+
+</body>
+</html>
