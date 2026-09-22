@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>My Stamp Card</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #fff5f5;
+      padding: 25px 15px;
+    }
+
+    .container {
+      max-width: 420px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(80, 0, 20, 0.12);
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #800000;
+      margin-bottom: 8px;
+    }
+
+    .welcome {
+      text-align: center;
+      color: #777;
+      margin-bottom: 25px;
+    }
+
+    .stamp-title {
+      text-align: center;
+      color: #555;
+      margin-bottom: 15px;
+    }
+
+    .stamps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stamp {
+      height: 65px;
+      border: 2px solid #800000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .stamp.active {
+      background: #800000;
+      color: white;
+    }
+
+    .count {
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      color: #800000;
+      margin-bottom: 10px;
+    }
+
+    .reward {
+      text-align: center;
+      background: #fff0f0;
+      padding: 15px;
+      border-radius: 12px;
+      color: #800000;
+      margin-bottom: 18px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: #800000;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #660000;
+    }
+
+    .logout {
+      background: #555;
+    }
+
+    #message {
+      text-align: center;
+      margin-top: 15px;
+      color: #800000;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="card">
+
+      <h1>⭐ My Stamp Card</h1>
+
+      <p class="welcome">
+        Welcome, <span id="customerName">Customer</span>
+      </p>
+
+      <p class="stamp-title">
+        Your Loyalty Stamps
+      </p>
+
+      <div class="stamps" id="stamps"></div>
+
+      <div class="count" id="stampCount">
+        0 / 8 Stamps
+      </div>
+
+      <div class="reward" id="reward">
+        Collect 8 stamps to unlock your reward 🎁
+      </div>
+
+      <button onclick="requestStamp()">
+        🧾 Request Stamp
+      </button>
+
+      <button class="logout" onclick="logoutCustomer()">
+        Logout
+      </button>
+
+      <div id="message"></div>
+
+    </div>
+
+  </div>
+
+
+  <script type="module">
+
+    import { initializeApp }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      addDoc,
+      collection,
+      getDocs,
+      query,
+      where
+    }
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+    const firebaseConfig = {
+      // यहाँ वही Firebase config रखें
+      // जो आपने index.html में लगाया है
+    };
+
+
+    const app = initializeApp(firebaseConfig);
+
+    const auth = getAuth(app);
+
+    const db = getFirestore(app);
+
+
+    onAuthStateChanged(auth, async (user) => {
+
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const customerRef =
+        doc(db, "customers", user.uid);
+
+      const customerSnap =
+        await getDoc(customerRef);
+
+      if (customerSnap.exists()) {
+
+        const data =
+          customerSnap.data();
+
+        document.getElementById("customerName")
+          .textContent = data.name || "Customer";
+
+        const stamps =
+          data.stamps || 0;
+
+        document.getElementById("stampCount")
+          .textContent = stamps + " / 8 Stamps";
+
+        showStamps(stamps);
+
+        if (data.rewardUnlocked === true) {
+
+          document.getElementById("reward")
+            .textContent =
+            "🎉 Reward Unlocked! Please claim your reward at the shop.";
+
+        }
+
+      }
+
+    });
+
+
+    function showStamps(count) {
+
+      const container =
+        document.getElementById("stamps");
+
+      container.innerHTML = "";
+
+      for (let i = 1; i <= 8; i++) {
+
+        const stamp =
+          document.createElement("div");
+
+        stamp.className = "stamp";
+
+        if (i <= count) {
+
+          stamp.classList.add("active");
+
+          stamp.textContent = "✓";
+
+        } else {
+
+          stamp.textContent = i;
+
+        }
+
+        container.appendChild(stamp);
+
+      }
+
+    }
+
+
+    window.requestStamp = async function () {
+
+      const user = auth.currentUser;
+
+      if (!user) return;
+
+      const message =
+        document.getElementById("message");
+
+      try {
+
+        const customerSnap =
+          await getDoc(
+            doc(db, "customers", user.uid)
+          );
+
+        const data =
+          customerSnap.data();
+
+        await addDoc(
+          collection(db, "stampRequests"),
+          {
+            customerId: user.uid,
+            customerName: data.name || "Customer",
+            purchaseAmount: 0,
+            status: "pending",
+            createdAt: new Date()
+          }
+        );
+
+        message.textContent =
+          "Stamp request sent successfully!";
+
+      } catch (error) {
+
+        message.textContent =
+          error.message;
+
+      }
+
+    };
+
+
+    window.logoutCustomer = async function () {
+
+      await signOut(auth);
+
+      window.location.href = "index.html";
+
+    };
+
+  </script>
+
+</body>
+</html>
