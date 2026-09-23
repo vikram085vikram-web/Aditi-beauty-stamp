@@ -134,14 +134,16 @@
 
     <div class="tabs">
 
-      <button id="loginTab"
-              class="active"
-              onclick="showLogin()">
+      <button
+        id="loginTab"
+        class="active"
+        onclick="showLogin()">
         Login
       </button>
 
-      <button id="registerTab"
-              onclick="showRegister()">
+      <button
+        id="registerTab"
+        onclick="showRegister()">
         Register
       </button>
 
@@ -163,8 +165,9 @@
         placeholder="Password"
       >
 
-      <button class="main-btn"
-              onclick="loginCustomer()">
+      <button
+        class="main-btn"
+        onclick="loginCustomer()">
         Login
       </button>
 
@@ -199,35 +202,19 @@
         placeholder="Create password"
       >
 
-      <button class="main-btn"
-              onclick="registerCustomer()">
+      <button
+        class="main-btn"
+        onclick="registerCustomer()">
         Create Account
       </button>
 
     </div>
 
-
     <div id="message"></div>
 
   </div>
 
-<script>
-function showLogin() {
-  document.getElementById("loginForm").classList.add("active");
-  document.getElementById("registerForm").classList.remove("active");
 
-  document.getElementById("loginTab").classList.add("active");
-  document.getElementById("registerTab").classList.remove("active");
-}
-
-function showRegister() {
-  document.getElementById("registerForm").classList.add("active");
-  document.getElementById("loginForm").classList.remove("active");
-
-  document.getElementById("registerTab").classList.add("active");
-  document.getElementById("loginTab").classList.remove("active");
-}
-</script>
   <script type="module">
 
     import { initializeApp }
@@ -247,34 +234,30 @@ function showRegister() {
     }
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDlaKQWMrZQ2T0mG4nujsTldN6Yu7Jp_o8",
-  authDomain: "aditi-beauty-and-cosmetic-hab.firebaseapp.com",
-  projectId: "aditi-beauty-and-cosmetic-hab",
-  storageBucket: "aditi-beauty-and-cosmetic-hab.firebasestorage.app",
-  messagingSenderId: "961774493251",
-  appId: "1:961774493251:web:bbfb1d1c909354a4963ef6",
-  measurementId: "G-78BR0HPW51"
-};
+    // Firebase configuration
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+    const firebaseConfig = {
+      apiKey: "AIzaSyDlaKQWMrZQ2T0mG4nujsTldN6Yu7Jp_o8",
+      authDomain: "aditi-beauty-and-cosmetic-hab.firebaseapp.com",
+      projectId: "aditi-beauty-and-cosmetic-hab",
+      storageBucket: "aditi-beauty-and-cosmetic-hab.firebasestorage.app",
+      messagingSenderId: "961774493251",
+      appId: "1:961774493251:web:bbfb1d1c909354a4963ef6",
+      measurementId: "G-78BR0HPW51"
+    };
 
-    const app =
-      initializeApp(firebaseConfig);
 
-    const auth =
-      getAuth(app);
+    // Initialize Firebase ONCE
 
-    const db =
-      getFirestore(app);
+    const app = initializeApp(firebaseConfig);
 
+    const auth = getAuth(app);
+
+    const db = getFirestore(app);
+
+
+    // LOGIN TAB
 
     window.showLogin = function () {
 
@@ -297,6 +280,8 @@ const analytics = getAnalytics(app);
     };
 
 
+    // REGISTER TAB
+
     window.showRegister = function () {
 
       document
@@ -318,22 +303,27 @@ const analytics = getAnalytics(app);
     };
 
 
+    // REGISTER CUSTOMER
+
     window.registerCustomer = async function () {
 
       const name =
         document
           .getElementById("registerName")
-          .value.trim();
+          .value
+          .trim();
 
       const phone =
         document
           .getElementById("registerPhone")
-          .value.trim();
+          .value
+          .trim();
 
       const email =
         document
           .getElementById("registerEmail")
-          .value.trim();
+          .value
+          .trim();
 
       const password =
         document
@@ -344,6 +334,8 @@ const analytics = getAnalytics(app);
         document.getElementById("message");
 
 
+      // Check fields
+
       if (!name || !phone || !email || !password) {
 
         message.textContent =
@@ -353,7 +345,24 @@ const analytics = getAnalytics(app);
       }
 
 
+      // Password length
+
+      if (password.length < 6) {
+
+        message.textContent =
+          "Password must be at least 6 characters.";
+
+        return;
+      }
+
+
+      message.textContent =
+        "Creating account...";
+
+
       try {
+
+        // Create Firebase account
 
         const userCredential =
           await createUserWithEmailAndPassword(
@@ -366,6 +375,8 @@ const analytics = getAnalytics(app);
         const user =
           userCredential.user;
 
+
+        // Create customer document
 
         await setDoc(
           doc(db, "customers", user.uid),
@@ -391,7 +402,19 @@ const analytics = getAnalytics(app);
           "Account created successfully!";
 
 
+        // Open customer dashboard
+
+        setTimeout(function () {
+
+          window.location.href =
+            "customer.html";
+
+        }, 1000);
+
+
       } catch (error) {
+
+        console.error(error);
 
         message.textContent =
           error.message;
@@ -401,12 +424,15 @@ const analytics = getAnalytics(app);
     };
 
 
+    // LOGIN CUSTOMER
+
     window.loginCustomer = async function () {
 
       const email =
         document
           .getElementById("loginEmail")
-          .value.trim();
+          .value
+          .trim();
 
       const password =
         document
@@ -426,6 +452,10 @@ const analytics = getAnalytics(app);
       }
 
 
+      message.textContent =
+        "Logging in...";
+
+
       try {
 
         await signInWithEmailAndPassword(
@@ -435,11 +465,13 @@ const analytics = getAnalytics(app);
         );
 
 
-        window.location.href=
+        window.location.href =
           "customer.html";
 
 
       } catch (error) {
+
+        console.error(error);
 
         message.textContent =
           error.message;
