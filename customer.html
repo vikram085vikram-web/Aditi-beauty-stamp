@@ -176,39 +176,25 @@
       doc,
       getDoc,
       addDoc,
-      collection,
-      getDocs,
-      query,
-      where
+      collection
     }
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
+    // Firebase configuration
+
     const firebaseConfig = {
-      
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDlaKQWMrZQ2T0mG4nujsTldN6Yu7Jp_o8",
-  authDomain: "aditi-beauty-and-cosmetic-hab.firebaseapp.com",
-  projectId: "aditi-beauty-and-cosmetic-hab",
-  storageBucket: "aditi-beauty-and-cosmetic-hab.firebasestorage.app",
-  messagingSenderId: "961774493251",
-  appId: "1:961774493251:web:bbfb1d1c909354a4963ef6",
-  measurementId: "G-78BR0HPW51"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+      apiKey: "AIzaSyDlaKQWMrZQ2T0mG4nujsTldN6Yu7Jp_o8",
+      authDomain: "aditi-beauty-and-cosmetic-hab.firebaseapp.com",
+      projectId: "aditi-beauty-and-cosmetic-hab",
+      storageBucket: "aditi-beauty-and-cosmetic-hab.firebasestorage.app",
+      messagingSenderId: "961774493251",
+      appId: "1:961774493251:web:bbfb1d1c909354a4963ef6",
+      measurementId: "G-78BR0HPW51"
     };
 
+
+    // Initialize Firebase ONCE
 
     const app = initializeApp(firebaseConfig);
 
@@ -217,61 +203,101 @@ const analytics = getAnalytics(app);
     const db = getFirestore(app);
 
 
+    // Check logged-in customer
+
     onAuthStateChanged(auth, async (user) => {
 
       if (!user) {
+
         window.location.href = "index.html";
+
         return;
       }
 
-      const customerRef =
-        doc(db, "customers", user.uid);
 
-      const customerSnap =
-        await getDoc(customerRef);
+      try {
 
-      if (customerSnap.exists()) {
+        const customerRef =
+          doc(db, "customers", user.uid);
 
-        const data =
-          customerSnap.data();
+        const customerSnap =
+          await getDoc(customerRef);
 
-        document.getElementById("customerName")
-          .textContent = data.name || "Customer";
 
-        const stamps =
-          data.stamps || 0;
+        if (customerSnap.exists()) {
 
-        document.getElementById("stampCount")
-          .textContent = stamps + " / 8 Stamps";
+          const data =
+            customerSnap.data();
 
-        showStamps(stamps);
 
-        if (data.rewardUnlocked === true) {
+          // Customer name
 
-          document.getElementById("reward")
+          document
+            .getElementById("customerName")
             .textContent =
-            "🎉 Reward Unlocked! Please claim your reward at the shop.";
+            data.name || "Customer";
+
+
+          // Customer stamps
+
+          const stamps =
+            data.stamps || 0;
+
+
+          document
+            .getElementById("stampCount")
+            .textContent =
+            stamps + " / 8 Stamps";
+
+
+          showStamps(stamps);
+
+
+          // Reward
+
+          if (data.rewardUnlocked === true) {
+
+            document
+              .getElementById("reward")
+              .textContent =
+              "🎉 Reward Unlocked! Please claim your reward at the shop.";
+
+          }
 
         }
+
+      } catch (error) {
+
+        document
+          .getElementById("message")
+          .textContent =
+          error.message;
 
       }
 
     });
 
 
+    // Show stamps
+
     function showStamps(count) {
 
       const container =
         document.getElementById("stamps");
 
+
       container.innerHTML = "";
+
 
       for (let i = 1; i <= 8; i++) {
 
         const stamp =
           document.createElement("div");
 
-        stamp.className = "stamp";
+
+        stamp.className =
+          "stamp";
+
 
         if (i <= count) {
 
@@ -285,6 +311,7 @@ const analytics = getAnalytics(app);
 
         }
 
+
         container.appendChild(stamp);
 
       }
@@ -292,14 +319,28 @@ const analytics = getAnalytics(app);
     }
 
 
+    // Request stamp
+
     window.requestStamp = async function () {
 
-      const user = auth.currentUser;
+      const user =
+        auth.currentUser;
 
-      if (!user) return;
+
+      if (!user) {
+
+        return;
+
+      }
+
 
       const message =
         document.getElementById("message");
+
+
+      message.textContent =
+        "Sending request...";
+
 
       try {
 
@@ -308,24 +349,46 @@ const analytics = getAnalytics(app);
             doc(db, "customers", user.uid)
           );
 
+
+        if (!customerSnap.exists()) {
+
+          message.textContent =
+            "Customer record not found.";
+
+          return;
+
+        }
+
+
         const data =
           customerSnap.data();
+
 
         await addDoc(
           collection(db, "stampRequests"),
           {
+
             customerId: user.uid,
-            customerName: data.name || "Customer",
+
+            customerName:
+              data.name || "Customer",
+
             purchaseAmount: 0,
+
             status: "pending",
+
             createdAt: new Date()
+
           }
         );
+
 
         message.textContent =
           "Stamp request sent successfully!";
 
       } catch (error) {
+
+        console.error(error);
 
         message.textContent =
           error.message;
@@ -335,11 +398,25 @@ const analytics = getAnalytics(app);
     };
 
 
+    // Logout
+
     window.logoutCustomer = async function () {
 
-      await signOut(auth);
+      try {
 
-      window.location.href = "index.html";
+        await signOut(auth);
+
+        window.location.href =
+          "index.html";
+
+      } catch (error) {
+
+        document
+          .getElementById("message")
+          .textContent =
+          error.message;
+
+      }
 
     };
 
