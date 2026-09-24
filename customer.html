@@ -360,32 +360,21 @@
         }
 
 
-        const data =
-          customerSnap.data();
+        const requestRef = await addDoc(
+  collection(db, "stampRequests"),
+  {
+    customerId: user.uid,
+    customerName: data.name || "Customer",
+    purchaseAmount: 0,
+    status: "pending",
+    createdAt: new Date()
+  }
+);
 
+message.textContent =
+  "Request saved! ID: " + requestRef.id;
 
-        await addDoc(
-          collection(db, "stampRequests"),
-          {
-
-            customerId: user.uid,
-
-            customerName:
-              data.name || "Customer",
-
-            purchaseAmount: 0,
-
-            status: "pending",
-
-            createdAt: new Date()
-
-          }
-        );
-
-
-        message.textContent =
-          "Stamp request sent successfully!";
-
+console.log("STAMP REQUEST CREATED:", requestRef.id);
       } catch (error) {
 
         console.error(error);
