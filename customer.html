@@ -106,14 +106,25 @@
       background: #660000;
     }
 
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
     .logout {
       background: #555;
+    }
+
+    .logout:hover {
+      background: #333;
     }
 
     #message {
       text-align: center;
       margin-top: 15px;
       color: #800000;
+      min-height: 20px;
+      word-break: break-word;
     }
   </style>
 </head>
@@ -144,11 +155,15 @@
         Collect 8 stamps to unlock your reward 🎁
       </div>
 
-      <button onclick="requestStamp()">
+      <button
+        id="requestStampButton"
+        onclick="requestStamp()">
         🧾 Request Stamp
       </button>
 
-      <button class="logout" onclick="logoutCustomer()">
+      <button
+        class="logout"
+        onclick="logoutCustomer()">
         Logout
       </button>
 
@@ -161,15 +176,21 @@
 
   <script type="module">
 
-    import { initializeApp }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    // ==============================
+    // FIREBASE IMPORTS
+    // ==============================
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
 
     import {
       getAuth,
       onAuthStateChanged,
       signOut
-    }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
 
     import {
       getFirestore,
@@ -177,39 +198,62 @@
       getDoc,
       addDoc,
       collection
-    }
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 
-    // Firebase configuration
+    // ==============================
+    // FIREBASE CONFIG
+    // ==============================
 
     const firebaseConfig = {
-      apiKey: "AIzaSyDlaKQWMrZQ2T0mG4nujsTldN6Yu7Jp_o8",
-      authDomain: "aditi-beauty-and-cosmetic-hab.firebaseapp.com",
-      projectId: "aditi-beauty-and-cosmetic-hab",
-      storageBucket: "aditi-beauty-and-cosmetic-hab.firebasestorage.app",
-      messagingSenderId: "961774493251",
-      appId: "1:961774493251:web:bbfb1d1c909354a4963ef6",
-      measurementId: "G-78BR0HPW51"
+
+      apiKey:
+        "AIzaSyDlaKQWMrZQ2T0mG4nujsTldN6Yu7Jp_o8",
+
+      authDomain:
+        "aditi-beauty-and-cosmetic-hab.firebaseapp.com",
+
+      projectId:
+        "aditi-beauty-and-cosmetic-hab",
+
+      storageBucket:
+        "aditi-beauty-and-cosmetic-hab.firebasestorage.app",
+
+      messagingSenderId:
+        "961774493251",
+
+      appId:
+        "1:961774493251:web:bbfb1d1c909354a4963ef6",
+
+      measurementId:
+        "G-78BR0HPW51"
     };
 
 
-    // Initialize Firebase ONCE
+    // ==============================
+    // INITIALIZE FIREBASE
+    // ==============================
 
-    const app = initializeApp(firebaseConfig);
+    const app =
+      initializeApp(firebaseConfig);
 
-    const auth = getAuth(app);
+    const auth =
+      getAuth(app);
 
-    const db = getFirestore(app);
+    const db =
+      getFirestore(app);
 
 
-    // Check logged-in customer
+    // ==============================
+    // CHECK LOGIN
+    // ==============================
 
     onAuthStateChanged(auth, async (user) => {
 
       if (!user) {
 
-        window.location.href = "index.html";
+        window.location.href =
+          "index.html";
 
         return;
       }
@@ -218,55 +262,75 @@
       try {
 
         const customerRef =
-          doc(db, "customers", user.uid);
+          doc(
+            db,
+            "customers",
+            user.uid
+          );
+
 
         const customerSnap =
           await getDoc(customerRef);
 
 
-        if (customerSnap.exists()) {
-
-          const data =
-            customerSnap.data();
-
-
-          // Customer name
+        if (!customerSnap.exists()) {
 
           document
-            .getElementById("customerName")
+            .getElementById("message")
             .textContent =
-            data.name || "Customer";
+            "Customer record not found.";
+
+          return;
+        }
 
 
-          // Customer stamps
+        const data =
+          customerSnap.data();
 
-          const stamps =
-            data.stamps || 0;
 
+        // ==============================
+        // CUSTOMER NAME
+        // ==============================
+
+        document
+          .getElementById("customerName")
+          .textContent =
+          data.name || "Customer";
+
+
+        // ==============================
+        // STAMPS
+        // ==============================
+
+        const stamps =
+          Number(data.stamps) || 0;
+
+
+        document
+          .getElementById("stampCount")
+          .textContent =
+          stamps + " / 8 Stamps";
+
+
+        showStamps(stamps);
+
+
+        // ==============================
+        // REWARD
+        // ==============================
+
+        if (data.rewardUnlocked === true) {
 
           document
-            .getElementById("stampCount")
+            .getElementById("reward")
             .textContent =
-            stamps + " / 8 Stamps";
-
-
-          showStamps(stamps);
-
-
-          // Reward
-
-          if (data.rewardUnlocked === true) {
-
-            document
-              .getElementById("reward")
-              .textContent =
-              "🎉 Reward Unlocked! Please claim your reward at the shop.";
-
-          }
+            "🎉 Reward Unlocked! Please claim your reward at the shop.";
 
         }
 
       } catch (error) {
+
+        console.error(error);
 
         document
           .getElementById("message")
@@ -278,7 +342,9 @@
     });
 
 
-    // Show stamps
+    // ==============================
+    // SHOW STAMPS
+    // ==============================
 
     function showStamps(count) {
 
@@ -303,11 +369,13 @@
 
           stamp.classList.add("active");
 
-          stamp.textContent = "✓";
+          stamp.textContent =
+            "✓";
 
         } else {
 
-          stamp.textContent = i;
+          stamp.textContent =
+            i;
 
         }
 
@@ -319,7 +387,9 @@
     }
 
 
-    // Request stamp
+    // ==============================
+    // REQUEST STAMP
+    // ==============================
 
     window.requestStamp = async function () {
 
@@ -329,8 +399,12 @@
 
       if (!user) {
 
-        return;
+        document
+          .getElementById("message")
+          .textContent =
+          "Please login first.";
 
+        return;
       }
 
 
@@ -338,15 +412,31 @@
         document.getElementById("message");
 
 
+      const button =
+        document.getElementById("requestStampButton");
+
+
       message.textContent =
         "Sending request...";
 
 
+      button.disabled =
+        true;
+
+
       try {
+
+        // ==============================
+        // GET CUSTOMER
+        // ==============================
 
         const customerSnap =
           await getDoc(
-            doc(db, "customers", user.uid)
+            doc(
+              db,
+              "customers",
+              user.uid
+            )
           );
 
 
@@ -355,39 +445,88 @@
           message.textContent =
             "Customer record not found.";
 
-          return;
+          button.disabled =
+            false;
 
+          return;
         }
 
 
-        const requestRef = await addDoc(
-  collection(db, "stampRequests"),
-  {
-    customerId: user.uid,
-    customerName: data.name || "Customer",
-    purchaseAmount: 0,
-    status: "pending",
-    createdAt: new Date()
-  }
-);
+        // ==============================
+        // IMPORTANT:
+        // GET CUSTOMER DATA
+        // ==============================
 
-message.textContent =
-  "Request saved! ID: " + requestRef.id;
+        const data =
+          customerSnap.data();
 
-console.log("STAMP REQUEST CREATED:", requestRef.id);
+
+        // ==============================
+        // CREATE STAMP REQUEST
+        // ==============================
+
+        const requestRef =
+          await addDoc(
+            collection(
+              db,
+              "stampRequests"
+            ),
+            {
+
+              customerId:
+                user.uid,
+
+              customerName:
+                data.name || "Customer",
+
+              purchaseAmount:
+                0,
+
+              status:
+                "pending",
+
+              createdAt:
+                new Date()
+
+            }
+          );
+
+
+        console.log(
+          "STAMP REQUEST CREATED:",
+          requestRef.id
+        );
+
+
+        message.textContent =
+          "Stamp request sent successfully!";
+
+
       } catch (error) {
 
-        console.error(error);
+        console.error(
+          "STAMP REQUEST ERROR:",
+          error
+        );
+
 
         message.textContent =
           error.message;
+
+
+      } finally {
+
+        button.disabled =
+          false;
 
       }
 
     };
 
 
-    // Logout
+    // ==============================
+    // LOGOUT
+    // ==============================
 
     window.logoutCustomer = async function () {
 
@@ -395,10 +534,15 @@ console.log("STAMP REQUEST CREATED:", requestRef.id);
 
         await signOut(auth);
 
+
         window.location.href =
           "index.html";
 
+
       } catch (error) {
+
+        console.error(error);
+
 
         document
           .getElementById("message")
