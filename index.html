@@ -465,9 +465,23 @@
         );
 
 
-        window.location.href =
-          "customer.html";
+        const userCredential = await signInWithEmailAndPassword(
+  auth,
+  email,
+  password
+);
 
+const user = userCredential.user;
+
+// Check if user is admin
+const adminRef = doc(db, "admins", user.uid);
+const adminSnap = await getDoc(adminRef);
+
+if (adminSnap.exists()) {
+  window.location.href = "admin.html";
+} else {
+  window.location.href = "customer.html";
+}
 
       } catch (error) {
 
