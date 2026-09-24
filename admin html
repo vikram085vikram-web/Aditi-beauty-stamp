@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Aditi Beauty</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+    }
+
+    .request {
+      background: white;
+      padding: 18px;
+      margin: 15px 0;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .request h3 {
+      margin-top: 0;
+    }
+
+    .request p {
+      margin: 7px 0;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-right: 8px;
+      font-size: 14px;
+    }
+
+    .approve {
+      background: #28a745;
+      color: white;
+    }
+
+    .reject {
+      background: #dc3545;
+      color: white;
+    }
+
+    .logout {
+      background: #333;
+      color: white;
+      display: block;
+      margin: 20px auto;
+    }
+
+    #message {
+      text-align: center;
+      margin: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>Admin Panel</h1>
+
+    <p id="message">Checking admin access...</p>
+
+    <div id="requests"></div>
+
+    <button class="logout" onclick="logout()">Logout</button>
+
+  </div>
+
+
+  <script type="module">
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      getDocs,
+      doc,
+      getDoc,
+      runTransaction
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+    // Firebase configuration
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDlaKQWMrZ2Q0T0mG4nujsTldN6Yu7Jp_o8",
+      authDomain: "aditi-beauty-and-cosmetic-hab.firebaseapp.com",
+      projectId: "aditi-beauty-and-cosmetic-hab",
+      storageBucket: "aditi-beauty-and-cosmetic-hab.firebasestorage.app",
+      messagingSenderId: "961774493251",
+      appId: "1:961774493251:web:bbfb1d1c909354a4963ef6",
+      measurementId: "G-78BR0HPW51"
+    };
+
+
+    const app = initializeApp(firebaseConfig);
+
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+
+    const message = document.getElementById("message");
+    const requestsDiv = document.getElementById("requests");
+
+
+    // Check login
+
+    onAuthStateChanged(auth, async (user) => {
+
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      // Check if this user is an admin
+
+      try {
+
+        const adminRef = doc(db, "admins", user.uid);
+        const adminSnap = await getDoc(adminRef);
+
+        if (!adminSnap.exists()) {
+
+          message.textContent = "Access denied. You are not an admin.";
+          requestsDiv.innerHTML = "";
+
+          return;
+        }
+
+        message.textContent = "Pending Stamp Requests";
+
+        loadRequests();
+
+      } catch (error) {
+
+        console.error(error);
+
+        message.textContent = "Error checking admin access.";
+
+      }
+
+    });
+
+
+    // Load pending requests
+
+    async function loadRequests() {
+
+      requestsDiv.innerHTML = "Loading requests...";
+
+      try {
+
+        const q = query(
+          collection(db, "stampRequests"),
+          where("status", "==", "pending")
+        );
+
+        const snapshot = await getDocs(q);
+
+        requestsDiv.innerHTML = "";
+
+        if (snapshot.empty) {
+
+          requestsDiv.innerHTML = "<p style='text-align:center;'>No pending requests.</p>";
+
+          return;
+        }
+
+
+        snapshot.forEach((requestDoc) => {
+
+          const data = requestDoc.data();
+
+          const div = document.createElement("div");
+
+          div.className = "request";
+
+          div.innerHTML = `
+            <h3>${data.customerName || "Customer"}</h3>
+
+            <p>
+              <strong>Purchase Amount:</strong>
+              ₹${data.purchaseAmount || 0}
+            </p>
+
+            <p>
+              <strong>Status:</strong>
+              ${data.status}
+            </p>
+
+            <button class="approve">
+              Approve Stamp
+            </button>
+
+            <button class="reject">
+              Reject
+            </button>
+          `;
+
+
+          const approveButton = div.querySelector(".approve");
+          const rejectButton = div.querySelector(".reject");
+
+
+          approveButton.onclick = () => approveRequest(requestDoc.id);
+
+          rejectButton.onclick = () => rejectRequest(requestDoc.id);
+
+
+          requestsDiv.appendChild(div);
+
+        });
+
+      } catch (error) {
+
+        console.error(error);
+
+        requestsDiv.innerHTML =
+          "<p>Error loading requests: " + error.message + "</p>";
+
+      }
+
+    }
+
+
+    // Approve request
+
+    async function approveRequest(requestId) {
+
+      if (!confirm("Approve this stamp request?")) {
+        return;
+      }
+
+      try {
+
+        await runTransaction(db, async (transaction) => {
+
+          const requestRef = doc(db, "stampRequests", requestId);
+
+          const requestSnap = await transaction.get(requestRef);
+
+          if (!requestSnap.exists()) {
+            throw new Error("Request not found.");
+          }
+
+          const requestData = requestSnap.data();
+
+          if (requestData.status !== "pending") {
+            throw new Error("This request has already been processed.");
+          }
+
+
+          const customerRef = doc(
+            db,
+            "customers",
+            requestData.customerId
+          );
+
+          const customerSnap = await transaction.get(customerRef);
+
+          if (!customerSnap.exists()) {
+            throw new Error("Customer not found.");
+          }
+
+
+          const customerData = customerSnap.data();
+
+          const currentStamps = customerData.stamps || 0;
+
+          const newStamps = Math.min(currentStamps + 1, 8);
+
+          const rewardUnlocked = newStamps >= 8;
+
+
+          transaction.update(customerRef, {
+
+            stamps: newStamps,
+
+            rewardUnlocked: rewardUnlocked
+
+          });
+
+
+          transaction.update(requestRef, {
+
+            status: "approved",
+
+            processedAt: new Date()
+
+          });
+
+        });
+
+
+        alert("Stamp approved successfully!");
+
+        loadRequests();
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert("Error: " + error.message);
+
+      }
+
+    }
+
+
+    // Reject request
+
+    async function rejectRequest(requestId) {
+
+      if (!confirm("Reject this stamp request?")) {
+        return;
+      }
+
+      try {
+
+        const requestRef = doc(db, "stampRequests", requestId);
+
+        await runTransaction(db, async (transaction) => {
+
+          const requestSnap = await transaction.get(requestRef);
+
+          if (!requestSnap.exists()) {
+            throw new Error("Request not found.");
+          }
+
+          const requestData = requestSnap.data();
+
+          if (requestData.status !== "pending") {
+            throw new Error("This request has already been processed.");
+          }
+
+          transaction.update(requestRef, {
+
+            status: "rejected",
+
+            processedAt: new Date()
+
+          });
+
+        });
+
+
+        alert("Stamp request rejected.");
+
+        loadRequests();
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert("Error: " + error.message);
+
+      }
+
+    }
+
+
+    // Logout
+
+    window.logout = async function() {
+
+      await signOut(auth);
+
+      window.location.href = "index.html";
+
+    };
+
+  </script>
+
+</body>
+</html>
